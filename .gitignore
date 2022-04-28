@@ -1,0 +1,4 @@
+.idea
+**/__pycache__
+deploy.bat
+example_files
