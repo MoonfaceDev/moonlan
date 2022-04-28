@@ -1,0 +1,11 @@
+uvicorn~=0.17.6
+scapy~=2.4.5
+pydantic~=1.9.0
+fastapi~=0.75.1
+starlette~=0.17.1
+pymongo~=4.1.1
+passlib~=1.7.4
+watchdog~=2.1.7
+moonlan~=0.1.0
+setuptools~=45.2.0
+python-jose~=3.3.0
