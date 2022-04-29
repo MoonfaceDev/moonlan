@@ -39,5 +39,5 @@ class DevicesConfig:
             return Devices([DeviceEntry(**device) for device in data])
 
 
-devices_config = DevicesConfig(Path('~/moonitor/api/devices.json').expanduser())
+devices_config = DevicesConfig(Path('/etc/moonitor/api/devices.json').expanduser())
 devices_config.listen_for_updates()

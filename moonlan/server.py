@@ -24,8 +24,8 @@ from moonlan.spoofing.spoofing_manager import SpoofingManager
 
 app = fastapi.FastAPI()
 
-app.mount('/static', StaticFiles(directory='/root/moonitor/app/static'))
-templates = Jinja2Templates(directory=str(Path("~/moonitor/app").expanduser()))
+app.mount('/static', StaticFiles(directory='/etc/moonitor/app/static'))
+templates = Jinja2Templates(directory=str(Path("/etc/moonitor/app").expanduser()))
 
 scans_data = ScansData(config.database.database_name)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")

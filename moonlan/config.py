@@ -37,4 +37,4 @@ class Config(BaseModel):
     server: Server
 
 
-config = Config(**_load_config(Path('~/moonitor/api/config.json').expanduser()))
+config = Config(**_load_config(Path('/etc/moonitor/api/config.json').expanduser()))
