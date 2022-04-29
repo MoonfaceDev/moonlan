@@ -1,0 +1,2 @@
+class AlreadySpoofingError(Exception):
+    pass
