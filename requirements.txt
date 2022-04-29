@@ -9,3 +9,4 @@ watchdog~=2.1.7
 moonlan~=0.1.0
 setuptools~=45.2.0
 python-jose~=3.3.0
+Jinja2~=3.1.1
