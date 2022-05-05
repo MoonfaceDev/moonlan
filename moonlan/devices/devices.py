@@ -1,5 +1,3 @@
-from typing import List
-
 from pydantic import BaseModel
 
 
@@ -13,7 +11,7 @@ def get_default_device(mac: str) -> DeviceEntry:
     return DeviceEntry(name='UNKNOWN', mac=mac, type='Unknown')
 
 
-class Devices(List[DeviceEntry]):
+class Devices(list[DeviceEntry]):
     def __getitem__(self, name: str) -> DeviceEntry:
         for entry in self:
             if entry.name.lower() == name.lower():

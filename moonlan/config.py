@@ -1,11 +1,10 @@
 import json
 from pathlib import Path
-from typing import Dict, List
 
 from pydantic import BaseModel
 
 
-def _load_config(config_path: Path) -> Dict[str, Dict[str, str]]:
+def _load_config(config_path: Path) -> dict[str, dict[str, str]]:
     with config_path.open('r') as file:
         return json.load(file)
 
@@ -27,7 +26,7 @@ class Spoofing(BaseModel):
 
 
 class Server(BaseModel):
-    allowed_origins: List[str]
+    allowed_origins: list[str]
 
 
 class Config(BaseModel):
