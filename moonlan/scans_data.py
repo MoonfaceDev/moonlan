@@ -80,6 +80,7 @@ class ScansData:
         response = [{
             'entity': {
                 'ip': device['entity']['ip'],
+                'hostname': device['entity']['hostname'],
                 'vendor': device['entity']['vendor'],
                 'open_ports': ScansData._get_ports_with_service_names(device['entity']['open_ports']),
                 **(devices_config.devices.from_mac(device['entity']['mac']).dict())
