@@ -1,9 +1,7 @@
-from typing import Optional
-
 from pydantic import BaseModel
 
 
 class User(BaseModel):
-    email: Optional[str] = None
-    full_name: Optional[str] = None
-    disabled: Optional[bool] = None
+    email: str | None = None
+    full_name: str | None = None
+    disabled: bool | None = None

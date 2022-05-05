@@ -73,11 +73,6 @@ async def register_for_access_token(full_name: str = Form(...), email: str = For
         )
 
 
-@app.get('/last')
-async def get_last(current_user: User = Depends(current_active_user)):
-    return scans_data.get_last()
-
-
 @app.get('/ip/{ip}')
 async def get_ip(ip: str, current_user: User = Depends(current_active_user)):
     try:
