@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 
 from moonlan.authentication.base_user_provider import BaseUserProvider
-from moonlan.authentication.models.internal_user import InternalUser
+from moonlan.models.internal_user import InternalUser
 
 
 class DatabaseUserProvider(BaseUserProvider):

@@ -3,8 +3,8 @@ from starlette import status
 
 from moonlan.authentication_api import current_active_user, authentication_manager
 from moonlan.authentication.exceptions import AuthenticationError
-from moonlan.authentication.models.token import Token
-from moonlan.authentication.models.user import User
+from moonlan.models.responses.token_response import TokenResponse
+from moonlan.models.user import User
 
 router = APIRouter(prefix='/auth', tags=['Authentication'])
 
@@ -14,7 +14,7 @@ async def check_token(current_user: User = Depends(current_active_user)):
     return ''
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=TokenResponse)
 async def login_for_access_token(username: str = Form(...), password: str = Form(...)):
     try:
         return authentication_manager.login_for_access_token(username, password)
@@ -26,7 +26,7 @@ async def login_for_access_token(username: str = Form(...), password: str = Form
         )
 
 
-@router.post("/register", response_model=Token)
+@router.post("/register", response_model=TokenResponse)
 async def register_for_access_token(full_name: str = Form(...), email: str = Form(...), password: str = Form(...)):
     try:
         return authentication_manager.create_user(full_name, email, password)

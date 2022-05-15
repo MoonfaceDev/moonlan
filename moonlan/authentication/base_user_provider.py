@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from moonlan.authentication.models.internal_user import InternalUser
+from moonlan.models.internal_user import InternalUser
 
 
 class BaseUserProvider(ABC):

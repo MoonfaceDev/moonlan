@@ -1,5 +1,5 @@
 from _socket import getservbyport
-from collections import Mapping
+from collections.abc import Mapping
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -8,20 +8,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from moonlan import scans_data
 from moonlan.authentication_api import current_active_user
 from moonlan.devices.device_manager import devices_config
+from moonlan.models.responses.device_response import DeviceResponse
+from moonlan.models.responses.devices_response import DevicesResponse
+from moonlan.models.responses.history_response import HistoryResponse
 
 router = APIRouter(prefix='/device', tags=['Devices'], dependencies=[Depends(current_active_user)])
-
-
-def _get_device_response(device: Mapping[str, Any]) -> dict:
-    device_info = devices_config.devices.from_mac(device['mac'])
-    return {
-        'last_online': device['scan_time'],
-        'ip': device['entity']['ip'],
-        'hostname': device['entity']['hostname'],
-        'vendor': device['entity']['vendor'],
-        'open_ports': _get_ports_with_service_names(device['entity']['open_ports']),
-        **(device_info.dict())
-    }
 
 
 def _get_ports_with_service_names(ports: list[int]) -> list[tuple[int, str]]:
@@ -34,14 +25,26 @@ def _get_ports_with_service_names(ports: list[int]) -> list[tuple[int, str]]:
     return [(port, safe_get_service_name(port)) for port in ports]
 
 
-@router.get('/ip/{ip}')
+def _get_device_response(device: Mapping[str, Any]) -> DeviceResponse:
+    device_info = devices_config.devices.from_mac(device['mac'])
+    return DeviceResponse(
+        last_online=device['scan_time'],
+        ip=device['entity']['ip'],
+        hostname=device['entity']['hostname'],
+        vendor=device['entity']['vendor'],
+        open_ports=_get_ports_with_service_names(device['entity']['open_ports']),
+        **(device_info.dict())
+    )
+
+
+@router.get('/ip/{ip}', response_model=DeviceResponse)
 async def get_ip(ip: str):
     device = scans_data.get_device_by_ip(ip)
     if device is None:
         raise HTTPException(status_code=404, detail='Device not found')
 
 
-@router.get('/mac/{mac}')
+@router.get('/mac/{mac}', response_model=DeviceResponse)
 async def get_mac(mac: str):
     device = scans_data.get_device_by_mac(mac)
     if device is None:
@@ -49,7 +52,7 @@ async def get_mac(mac: str):
     return _get_device_response(device)
 
 
-@router.get('/name/{name}')
+@router.get('/name/{name}', response_model=DeviceResponse)
 async def get_name(name: str):
     try:
         device = devices_config.devices[name]
@@ -58,13 +61,13 @@ async def get_name(name: str):
     return get_mac(device.mac)
 
 
-@router.get('/all')
+@router.get('/all', response_model=DevicesResponse)
 async def get_devices():
     devices = scans_data.get_devices()
     return [_get_device_response(device) for device in devices]
 
 
-@router.get('/all/history')
+@router.get('/all/history', response_model=HistoryResponse)
 async def get_history(time_period: float, time_interval: float):
     from_datetime = datetime.now() - timedelta(seconds=time_period)
     history = scans_data.get_history(from_datetime, time_interval)

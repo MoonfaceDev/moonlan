@@ -5,8 +5,8 @@ from passlib.context import CryptContext
 
 from moonlan.authentication.base_user_provider import BaseUserProvider
 from moonlan.authentication.exceptions import AuthenticationError
-from moonlan.authentication.models.internal_user import InternalUser
-from moonlan.authentication.models.token_data import TokenData
+from moonlan.models.internal_user import InternalUser
+from moonlan.models.token_data import TokenData
 from moonlan.config import config
 
 

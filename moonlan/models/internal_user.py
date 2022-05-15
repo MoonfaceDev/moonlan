@@ -1,4 +1,4 @@
-from moonlan.authentication.models.user import User
+from moonlan.models.user import User
 
 
 class InternalUser(User):
