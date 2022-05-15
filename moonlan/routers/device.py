@@ -26,7 +26,7 @@ def _get_ports_with_service_names(ports: list[int]) -> list[dict]:
 
 
 def _get_device_response(device: Mapping[str, Any]) -> DeviceResponse:
-    device_info = devices_config.devices.from_mac(device['mac'])
+    device_info = devices_config.devices.from_mac(device['entity']['mac'])
     return DeviceResponse(
         last_online=device['scan_time'],
         ip=device['entity']['ip'],
