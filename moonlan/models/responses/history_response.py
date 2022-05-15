@@ -1,8 +1,10 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
 class HistoryRecord(BaseModel):
-    time: str
+    time: datetime
     average: float
 
 
