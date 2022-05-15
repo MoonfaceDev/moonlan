@@ -3,6 +3,11 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+class PortInfo(BaseModel):
+    port: int
+    service: str
+
+
 class DeviceResponse(BaseModel):
     last_online: datetime
     name: str
@@ -11,4 +16,4 @@ class DeviceResponse(BaseModel):
     hostname: str
     mac: str
     vendor: str
-    open_ports: list[tuple[int, str]]
+    open_ports: list[PortInfo]

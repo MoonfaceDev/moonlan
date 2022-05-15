@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 
 from moonlan.authentication_api import current_active_user
+from moonlan.models.responses.spoofed_device_response import SpoofedDeviceResponse
 from moonlan.spoofing.exceptions import AlreadySpoofingError
 from moonlan.spoofing.spoofing_manager import SpoofingManager
 
@@ -9,7 +10,7 @@ spoofing_manager = SpoofingManager()
 router = APIRouter(prefix='/spoof', tags=['Spoofing'], dependencies=[Depends(current_active_user)])
 
 
-@router.get('/device')
+@router.get('/device', response_model=SpoofedDeviceResponse)
 async def get_spoofed_device():
     return spoofing_manager.spoofed_device
 
