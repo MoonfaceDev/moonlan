@@ -1,2 +1,0 @@
-class DeviceNotFoundError(Exception):
-    pass

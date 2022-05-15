@@ -1,36 +1,12 @@
-from _socket import getservbyport
+from collections import Mapping
 from datetime import datetime, timezone
+from typing import Any
 
 from pymongo import MongoClient
 
 from moonlan.config import config
-from moonlan.devices.device_manager import devices_config
-from moonlan.exceptions import DeviceNotFoundError
 
 _database = MongoClient().get_database(config.database.database_name)
-
-
-def _get_ports_with_service_names(ports: list[int]) -> list[tuple[int, str]]:
-    def safe_get_service_name(port: int) -> str:
-        try:
-            return getservbyport(port, "tcp")
-        except OSError:
-            return ''
-
-    return [(port, safe_get_service_name(port)) for port in ports]
-
-
-def _get_device_response(document: dict | None) -> dict:
-    if document is None:
-        raise DeviceNotFoundError()
-    device = devices_config.devices.from_mac(document['entity']['mac'])
-    response = {
-        'last_online': document['scan_time'],
-        'name': device.name,
-        'type': device.type,
-        **document['entity']
-    }
-    return response
 
 
 def get_history(from_datetime: datetime, time_interval: float) -> list:
@@ -54,39 +30,23 @@ def get_history(from_datetime: datetime, time_interval: float) -> list:
             '_id': 1
         }}
     ])
-    result = list(history)
-    response = [{'time': entry['_id'], 'average': entry['avg']} for entry in result]
-    return response
+    return list(history)
 
 
-def get_device_by_ip(ip_address: str) -> dict:
-    device = _database.get_collection('devices').find_one({
+def get_device_by_ip(ip_address: str) -> Mapping[str, Any]:
+    document = _database.get_collection('devices').find_one({
         'entity.ip': ip_address
     })
-    return _get_device_response(device)
+    return document
 
 
-def get_device_by_name(name: str) -> dict:
-    try:
-        device = devices_config.devices[name]
-    except KeyError:
-        raise DeviceNotFoundError()
-    device = _database.get_collection('devices').find_one({
-        'entity.mac': device.mac
+def get_device_by_mac(mac_address: str) -> Mapping[str, Any]:
+    document = _database.get_collection('devices').find_one({
+        'entity.mac': mac_address
     })
-    return _get_device_response(device)
+    return document
 
 
 def get_devices() -> list[dict]:
     devices = _database.get_collection('devices').find()
-    response = [{
-        'entity': {
-            'ip': device['entity']['ip'],
-            'hostname': device['entity']['hostname'],
-            'vendor': device['entity']['vendor'],
-            'open_ports': _get_ports_with_service_names(device['entity']['open_ports']),
-            **(devices_config.devices.from_mac(device['entity']['mac']).dict())
-        },
-        'last_online': device['scan_time']
-    } for device in devices]
-    return response
+    return list(devices)
