@@ -5,7 +5,7 @@ from pymongo import MongoClient
 from moonlan.config import config
 from moonlan.dal.documents.device_document import DeviceDocument
 from moonlan.dal.documents.history_document import HistoryDocument
-from moonlan.dal.documents.single_device_scan_document import SingleDeviceScanDocument
+from moonlan.dal.documents.device_scan_document import DeviceScanDocument
 
 _database = MongoClient().get_database(config.database.database_name)
 
@@ -34,11 +34,11 @@ def get_history(from_datetime: datetime, time_interval: float) -> list[HistoryDo
     return [HistoryDocument(**document) for document in history]
 
 
-def get_scans_for_single_device(
+def get_scans_for_device(
         mac: str,
         from_datetime: datetime,
         time_interval: timedelta
-) -> list[SingleDeviceScanDocument]:
+) -> list[DeviceScanDocument]:
     history = _database.get_collection('scans').aggregate([
         {'$match': {
             'scan_time': {'$gt': datetime.fromtimestamp(
@@ -57,7 +57,7 @@ def get_scans_for_single_device(
         {'$project': {'_id': 0, 'scan_time': 1, 'online': 1}},
         {'$sort': {'scan_time': 1}}
     ])
-    return [SingleDeviceScanDocument(**document) for document in history]
+    return [DeviceScanDocument(**document) for document in history]
 
 
 def get_device_by_ip(ip_address: str) -> DeviceDocument:
