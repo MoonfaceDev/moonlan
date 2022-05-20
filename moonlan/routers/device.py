@@ -1,16 +1,18 @@
 from _socket import getservbyport
-from collections.abc import Mapping
 from datetime import datetime, timedelta
-from typing import Any
 
+import numpy
 from fastapi import APIRouter, Depends, HTTPException
 
-from moonlan import scans_data
 from moonlan.authentication_api import current_active_user
+from moonlan.dal import scans_data
+from moonlan.dal.documents.device_document import DeviceDocument
+from moonlan.dal.documents.single_device_scan_document import SingleDeviceScanDocument
 from moonlan.devices.device_manager import devices_config
 from moonlan.models.responses.device_response import DeviceResponse
 from moonlan.models.responses.devices_response import DevicesResponse
 from moonlan.models.responses.history_response import HistoryResponse
+from moonlan.models.responses.single_history_response import SingleHistoryResponse
 
 router = APIRouter(prefix='/device', tags=['Devices'], dependencies=[Depends(current_active_user)])
 
@@ -25,14 +27,14 @@ def _get_ports_with_service_names(ports: list[int]) -> list[dict]:
     return [{'port': port, 'service': safe_get_service_name(port)} for port in ports]
 
 
-def _get_device_response(device: Mapping[str, Any]) -> DeviceResponse:
-    device_info = devices_config.devices.from_mac(device['entity']['mac'])
+def _get_device_response(document: DeviceDocument) -> DeviceResponse:
+    device_info = devices_config.devices.from_mac(document.entity.mac)
     return DeviceResponse(
-        last_online=device['scan_time'],
-        ip=device['entity']['ip'],
-        hostname=device['entity']['hostname'],
-        vendor=device['entity']['vendor'],
-        open_ports=_get_ports_with_service_names(device['entity']['open_ports']),
+        last_online=document.scan_time,
+        ip=document.entity.ip,
+        hostname=document.entity.hostname,
+        vendor=document.entity.vendor,
+        open_ports=_get_ports_with_service_names(document.entity.open_ports),
         **(device_info.dict())
     )
 
@@ -72,4 +74,71 @@ async def get_devices():
 async def get_history(time_period: float, time_interval: float):
     from_datetime = datetime.now() - timedelta(seconds=time_period)
     history = scans_data.get_history(from_datetime, time_interval)
-    return [{'time': entry['_id'], 'average': entry['avg']} for entry in history]
+    return [{'time': entry.id, 'average': entry.avg} for entry in history]
+
+
+@router.get('/mac/{mac}/history', response_model=SingleHistoryResponse)
+async def get_single_history(mac: str, time_period: float, time_interval: float):
+    from_datetime = datetime.now() - timedelta(seconds=time_period)
+    scans = scans_data.get_scans_for_single_device(mac, from_datetime, timedelta(seconds=time_interval))
+    end_datetime = datetime.fromtimestamp((datetime.now().timestamp() // time_interval) * time_interval)
+    start_datetime = end_datetime - timedelta(seconds=time_period)
+    online_times = _get_online_times(scans, start_datetime, end_datetime)
+    return [
+        {'time': group_start_time, 'online_time': group_online_time}
+        for group_start_time, group_online_time
+        in _get_online_time_groups(start_datetime, end_datetime, time_interval, online_times)
+    ]
+
+
+def _get_online_time_groups(
+        start_datetime: datetime,
+        end_datetime: datetime,
+        time_interval: float,
+        online_times: list[tuple[datetime, datetime]]
+) -> list[tuple[datetime, timedelta]]:
+    history = []
+    for group_start_timestamp in numpy.arange(start_datetime.timestamp(), end_datetime.timestamp(), time_interval):
+        group_start_datetime = datetime.fromtimestamp(group_start_timestamp)
+        group_end_datetime = min(group_start_datetime + timedelta(seconds=time_interval), end_datetime)
+        group_online_timedelta = _get_group_online_time(group_start_datetime, group_end_datetime, online_times)
+        history.append((group_start_datetime, group_online_timedelta))
+
+    return history
+
+
+def _get_group_online_time(
+        group_start_datetime: datetime,
+        group_end_datetime: datetime,
+        online_times: list[tuple[datetime, datetime]]
+) -> timedelta:
+    online_time = 0
+    for time_range in online_times:
+        intersection_start = max(group_start_datetime.timestamp(), time_range[0].timestamp())
+        intersection_end = min(group_end_datetime.timestamp(), time_range[1].timestamp())
+        intersection_duration = intersection_end - intersection_start
+        if intersection_duration > 0:
+            online_time += intersection_duration
+    return timedelta(seconds=online_time)
+
+
+def _get_online_times(
+        scans: list[SingleDeviceScanDocument],
+        start_datetime: datetime,
+        end_datetime: datetime
+) -> list[tuple[datetime, datetime]]:
+    online_times = []
+    if scans is None:
+        return online_times
+
+    if scans[0].online:
+        online_times.append((start_datetime, scans[0].scan_time))
+
+    for i in range(0, len(scans) - 1):
+        if scans[i].online:
+            online_times.append((scans[i].scan_time, scans[i + 1].scan_time))
+
+    if scans[-1].online:
+        online_times.append((scans[-1].scan_time, end_datetime))
+
+    return online_times
