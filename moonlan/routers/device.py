@@ -1,5 +1,5 @@
 from _socket import getservbyport
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import numpy
 from fastapi import APIRouter, Depends, HTTPException
@@ -79,11 +79,13 @@ async def get_history(time_period: float, time_interval: float):
 
 @router.get('/mac/{mac}/uptime', response_model=UptimeHistoryResponse)
 async def get_uptime_history(mac: str, time_period: float, time_interval: float):
-    from_datetime = datetime.now() - timedelta(seconds=time_period)
-    scans = scans_data.get_scans_for_device(mac, from_datetime, timedelta(seconds=time_interval))
-    end_datetime = datetime.fromtimestamp((datetime.now().timestamp() // time_interval) * time_interval)
+    print(datetime.now()
+          - timedelta(seconds=datetime.now().replace(tzinfo=timezone.utc).timestamp() % time_interval))
+    interval_offset = datetime.now().replace(tzinfo=timezone.utc).timestamp() % time_interval - time_interval
+    end_datetime = datetime.now() - timedelta(seconds=interval_offset)
     start_datetime = end_datetime - timedelta(seconds=time_period)
-    online_times = _get_online_times(scans, start_datetime, end_datetime)
+    scans = scans_data.get_scans_for_device(mac, start_datetime)
+    online_times = _get_online_times(scans, start_datetime)
     return [
         {'time': group_start_time, 'uptime': group_online_time}
         for group_start_time, group_online_time
@@ -124,8 +126,7 @@ def _get_group_uptime(
 
 def _get_online_times(
         scans: list[DeviceScanDocument],
-        start_datetime: datetime,
-        end_datetime: datetime
+        start_datetime: datetime
 ) -> list[tuple[datetime, datetime]]:
     online_times = []
     if scans is None:
@@ -134,11 +135,8 @@ def _get_online_times(
     if scans[0].online:
         online_times.append((start_datetime, scans[0].scan_time))
 
-    for i in range(0, len(scans) - 1):
+    for i in range(1, len(scans)):
         if scans[i].online:
-            online_times.append((scans[i].scan_time, scans[i + 1].scan_time))
-
-    if scans[-1].online:
-        online_times.append((scans[-1].scan_time, end_datetime))
+            online_times.append((scans[i - 1].scan_time, scans[i].scan_time))
 
     return online_times

@@ -1,11 +1,11 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
 from pymongo import MongoClient
 
 from moonlan.config import config
 from moonlan.dal.documents.device_document import DeviceDocument
-from moonlan.dal.documents.history_document import HistoryDocument
 from moonlan.dal.documents.device_scan_document import DeviceScanDocument
+from moonlan.dal.documents.history_document import HistoryDocument
 
 _database = MongoClient().get_database(config.database.database_name)
 
@@ -36,15 +36,11 @@ def get_history(from_datetime: datetime, time_interval: float) -> list[HistoryDo
 
 def get_scans_for_device(
         mac: str,
-        from_datetime: datetime,
-        time_interval: timedelta
+        from_datetime: datetime
 ) -> list[DeviceScanDocument]:
     history = _database.get_collection('scans').aggregate([
         {'$match': {
-            'scan_time': {'$gt': datetime.fromtimestamp(
-                from_datetime.timestamp()
-                - from_datetime.replace(tzinfo=timezone.utc).timestamp() % time_interval.seconds
-            )}
+            'scan_time': {'$gt': from_datetime}
         }},
         {'$set': {'online': {
             '$gt': [
