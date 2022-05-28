@@ -1,5 +1,5 @@
 from _socket import getservbyport
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import numpy
 from fastapi import APIRouter, Depends, HTTPException
@@ -78,13 +78,10 @@ async def get_history(time_period: float, time_interval: float):
 
 
 @router.get('/mac/{mac}/uptime', response_model=UptimeHistoryResponse)
-async def get_uptime_history(mac: str, time_period: float, time_interval: float):
-    print(datetime.now()
-          - timedelta(seconds=datetime.now().replace(tzinfo=timezone.utc).timestamp() % time_interval))
-    interval_offset = datetime.now().replace(tzinfo=timezone.utc).timestamp() % time_interval - time_interval
-    end_datetime = datetime.now() - timedelta(seconds=interval_offset)
-    start_datetime = end_datetime - timedelta(seconds=time_period)
-    scans = scans_data.get_scans_for_device(mac, start_datetime)
+async def get_uptime_history(mac: str, start_timestamp: float, end_timestamp: float, time_interval: float):
+    start_datetime = datetime.fromtimestamp(start_timestamp)
+    end_datetime = datetime.fromtimestamp(end_timestamp)
+    scans = scans_data.get_scans_for_device(mac, start_datetime, end_datetime)
     online_times = _get_online_times(scans, start_datetime)
     return [
         {'time': group_start_time, 'uptime': group_online_time}
@@ -124,12 +121,9 @@ def _get_group_uptime(
     return timedelta(seconds=uptime)
 
 
-def _get_online_times(
-        scans: list[DeviceScanDocument],
-        start_datetime: datetime
-) -> list[tuple[datetime, datetime]]:
+def _get_online_times(scans: list[DeviceScanDocument], start_datetime: datetime) -> list[tuple[datetime, datetime]]:
     online_times = []
-    if scans is None:
+    if not scans:
         return online_times
 
     if scans[0].online:

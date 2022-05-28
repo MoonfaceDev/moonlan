@@ -34,13 +34,13 @@ def get_history(from_datetime: datetime, time_interval: float) -> list[HistoryDo
     return [HistoryDocument(**document) for document in history]
 
 
-def get_scans_for_device(
-        mac: str,
-        from_datetime: datetime
-) -> list[DeviceScanDocument]:
+def get_scans_for_device(mac: str, start_datetime: datetime, end_datetime: datetime) -> list[DeviceScanDocument]:
     history = _database.get_collection('scans').aggregate([
         {'$match': {
-            'scan_time': {'$gt': from_datetime}
+            '$and': [
+                {'scan_time': {'$gte': start_datetime}},
+                {'scan_time': {'$lte': end_datetime}},
+            ]
         }},
         {'$set': {'online': {
             '$gt': [
