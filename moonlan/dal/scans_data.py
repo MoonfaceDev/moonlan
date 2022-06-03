@@ -10,22 +10,58 @@ from moonlan.dal.documents.history_document import HistoryDocument
 _database = MongoClient().get_database(config.database.database_name)
 
 
-def get_history(from_datetime: datetime, time_interval: float) -> list[HistoryDocument]:
+def get_history(start_datetime: datetime, end_datetime: datetime, time_interval: float) -> list[HistoryDocument]:
+    boundaries = [1000 * boundary for boundary in range(
+        int(start_datetime.replace(tzinfo=timezone.utc).timestamp()),
+        int(end_datetime.replace(tzinfo=timezone.utc).timestamp() + time_interval),
+        int(time_interval))]
     history = _database.get_collection('scans').aggregate([
         {'$match': {
-            'scan_time': {'$gt': datetime.fromtimestamp(
-                from_datetime.timestamp() - from_datetime.replace(tzinfo=timezone.utc).timestamp() % time_interval)}
+            '$and': [
+                {'scan_time': {'$gt': datetime.fromtimestamp(
+                    start_datetime.timestamp() -
+                    start_datetime.replace(tzinfo=timezone.utc).timestamp() % time_interval
+                )}},
+                {'scan_time': {'$lt': datetime.fromtimestamp(
+                    end_datetime.timestamp() -
+                    end_datetime.replace(tzinfo=timezone.utc).timestamp() % time_interval
+                )}}
+            ]
         }},
-        {'$group': {
-            '_id': {
-                '$toDate': {
-                    '$subtract': [
-                        {'$toLong': '$scan_time'},
-                        {'$mod': [{'$toLong': '$scan_time'}, int(time_interval * 1000)]}
+        {'$facet': {'data': [{'$bucket': {
+            'groupBy': {
+                '$subtract': [
+                    {'$toLong': '$scan_time'},
+                    {'$mod': [{'$toLong': '$scan_time'}, int(time_interval * 1000)]}
+                ]
+            },
+            'boundaries': boundaries,
+            'default': 'Other',
+            'output': {
+                'avg': {'$avg': {'$size': '$entities'}}
+            }
+        }}]}},
+        {"$addFields": {"data": {"$map": {
+            "input": boundaries[:-1],
+            "as": "i",
+            "in": {
+                "_id": "$$i",
+                "avg": {
+                    "$cond": [
+                        {"$eq": [{"$indexOfArray": ["$data._id", "$$i"]}, -1]},
+                        0,
+                        {"$arrayElemAt": ["$data.avg", {"$indexOfArray": ["$data._id", "$$i"]}]}
                     ]
                 }
+            }
+        }}}},
+        {"$unwind": "$data"},
+        {"$replaceRoot": {"newRoot": "$data"}},
+        {'$project': {
+            '_id': {
+                '$toDate': '$_id'
             },
-            'avg': {'$avg': {'$size': '$entities'}}
+            'avg': 1
         }},
         {'$sort': {
             '_id': 1

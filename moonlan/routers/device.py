@@ -71,9 +71,10 @@ async def get_devices():
 
 
 @router.get('/all/history', response_model=HistoryResponse)
-async def get_history(time_period: float, time_interval: float):
-    from_datetime = datetime.now() - timedelta(seconds=time_period)
-    history = scans_data.get_history(from_datetime, time_interval)
+async def get_history(start_timestamp: float, end_timestamp: float, time_interval: float):
+    start_datetime = datetime.fromtimestamp(start_timestamp)
+    end_datetime = datetime.fromtimestamp(end_timestamp)
+    history = scans_data.get_history(start_datetime, end_datetime, time_interval)
     return [{'time': entry.id, 'average': entry.avg} for entry in history]
 
 
