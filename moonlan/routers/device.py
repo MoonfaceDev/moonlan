@@ -82,7 +82,7 @@ async def get_history(start_timestamp: float, end_timestamp: float, time_interva
 async def get_uptime_history(mac: str, start_timestamp: float, end_timestamp: float, time_interval: float):
     start_datetime = datetime.fromtimestamp(start_timestamp)
     end_datetime = datetime.fromtimestamp(end_timestamp)
-    scans = scans_data.get_scans_for_device(mac, start_datetime, end_datetime)
+    scans = list(scans_data.get_scans_for_device(mac, start_datetime, end_datetime))
     online_times = _get_online_times(scans, start_datetime)
     return [
         {'time': group_start_time, 'uptime': group_online_time}
