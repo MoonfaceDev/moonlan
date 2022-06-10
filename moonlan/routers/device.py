@@ -4,10 +4,10 @@ from datetime import datetime, timedelta
 import numpy
 from fastapi import APIRouter, Depends, HTTPException
 
-from moonlan.dependencies.authentication_dependency import current_active_user
-from moonlan.dal import scans_data
+from moonlan.dal import scans_dal, devices_dal
 from moonlan.dal.documents.device_document import DeviceDocument
 from moonlan.dal.documents.device_scan_document import DeviceScanDocument
+from moonlan.dependencies.authentication_dependency import current_active_user
 from moonlan.devices.device_manager import devices_config
 from moonlan.models.responses.device_response import DeviceResponse
 from moonlan.models.responses.devices_response import DevicesResponse
@@ -41,7 +41,7 @@ def _get_device_response(document: DeviceDocument) -> DeviceResponse:
 
 @router.get('/ip/{ip}', response_model=DeviceResponse)
 async def get_ip(ip: str):
-    device = scans_data.get_device_by_ip(ip)
+    device = devices_dal.get_device_by_ip(ip)
     if device is None:
         raise HTTPException(status_code=404, detail='Device not found')
     return _get_device_response(device)
@@ -49,7 +49,7 @@ async def get_ip(ip: str):
 
 @router.get('/mac/{mac}', response_model=DeviceResponse)
 async def get_mac(mac: str):
-    device = scans_data.get_device_by_mac(mac)
+    device = devices_dal.get_device_by_mac(mac)
     if device is None:
         raise HTTPException(status_code=404, detail='Device not found')
     return _get_device_response(device)
@@ -66,7 +66,7 @@ async def get_name(name: str):
 
 @router.get('/all', response_model=DevicesResponse)
 async def get_devices():
-    devices = scans_data.get_devices()
+    devices = devices_dal.get_devices()
     return [_get_device_response(device) for device in devices]
 
 
@@ -74,7 +74,7 @@ async def get_devices():
 async def get_history(start_timestamp: float, end_timestamp: float, time_interval: float):
     start_datetime = datetime.fromtimestamp(start_timestamp)
     end_datetime = datetime.fromtimestamp(end_timestamp)
-    history = scans_data.get_history(start_datetime, end_datetime, time_interval)
+    history = scans_dal.get_history(start_datetime, end_datetime, time_interval)
     return [{'time': entry.id, 'average': entry.avg} for entry in history]
 
 
@@ -82,7 +82,7 @@ async def get_history(start_timestamp: float, end_timestamp: float, time_interva
 async def get_uptime_history(mac: str, start_timestamp: float, end_timestamp: float, time_interval: float):
     start_datetime = datetime.fromtimestamp(start_timestamp)
     end_datetime = datetime.fromtimestamp(end_timestamp)
-    scans = list(scans_data.get_scans_for_device(mac, start_datetime, end_datetime))
+    scans = list(scans_dal.get_scans_for_device(mac, start_datetime, end_datetime))
     online_times = _get_online_times(scans, start_datetime)
     return [
         {'time': group_start_time, 'uptime': group_online_time}

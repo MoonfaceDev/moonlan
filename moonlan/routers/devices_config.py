@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import ValidationError
 from starlette.responses import Response
 
+from moonlan.dal import devices_dal
 from moonlan.dependencies.authentication_dependency import current_active_user
-from moonlan.dal import scans_data
 from moonlan.devices.device_manager import devices_config, DEVICES_CONFIG_PATH
 from moonlan.devices.devices import Devices, DeviceEntry
 from moonlan.models.requests.devices_config_update_request import DevicesConfigUpdateRequest
@@ -17,7 +17,7 @@ router = APIRouter(prefix='/devices_config', tags=['Devices Config'], dependenci
 
 @router.get('/count', response_model=DevicesConfigCountResponse)
 async def get_count():
-    all_devices = scans_data.get_devices()
+    all_devices = devices_dal.get_devices()
     count = 0
     for device in all_devices:
         if devices_config.devices.from_mac(device.entity.mac).name != 'UNKNOWN':

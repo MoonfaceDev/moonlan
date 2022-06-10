@@ -1,19 +1,17 @@
-from pymongo import MongoClient
-
 from moonlan.authentication.base_user_provider import BaseUserProvider
+from moonlan.dal import users_dal
+from moonlan.dal.infrastructure.exceptions import DocumentNotFoundError
 from moonlan.models.internal_user import InternalUser
 
 
 class DatabaseUserProvider(BaseUserProvider):
-    def __init__(self, database_name: str):
-        self._users = MongoClient().get_database(database_name).get_collection('users')
 
-    def get_user(self, email: str) -> InternalUser:
-        user_dict = self._users.find_one({
-            'email': email
-        })
-        if user_dict is not None:
-            return InternalUser(**user_dict)
+    def get_user(self, email: str) -> InternalUser | None:
+        try:
+            user_document = users_dal.get_user_by_email(email)
+        except DocumentNotFoundError:
+            return None
+        return InternalUser(**user_document.dict())
 
     def insert_user(self, user: InternalUser):
-        self._users.insert_one(user.dict())
+        users_dal.create_user(user)

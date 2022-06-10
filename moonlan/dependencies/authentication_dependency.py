@@ -5,9 +5,8 @@ from starlette import status
 from moonlan.authentication.authentication_manager import AuthenticationManager
 from moonlan.authentication.database_user_provider import DatabaseUserProvider
 from moonlan.authentication.exceptions import AuthenticationError
-from moonlan.config import config
 
-authentication_manager = AuthenticationManager(DatabaseUserProvider(config.database.database_name))
+authentication_manager = AuthenticationManager(DatabaseUserProvider())
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
