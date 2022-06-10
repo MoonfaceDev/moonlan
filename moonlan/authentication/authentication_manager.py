@@ -3,17 +3,18 @@ from datetime import timedelta, datetime
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 
+from moonlan import consts
 from moonlan.authentication.base_user_provider import BaseUserProvider
 from moonlan.authentication.exceptions import AuthenticationError
+from moonlan.config import config
 from moonlan.models.internal_user import InternalUser
 from moonlan.models.token_data import TokenData
-from moonlan.config import config
 
 
 class AuthenticationManager:
     def __init__(self, user_provider: BaseUserProvider):
         self._user_provider = user_provider
-        self._pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        self._pwd_context = CryptContext(schemes=[consts.Authentication.PASSWORD_HASHING_SCHEME])
 
     def verify_password(self, plain_password: str, hashed_password: str):
         try:
@@ -39,7 +40,7 @@ class AuthenticationManager:
     def create_access_token(data: dict, expires_delta: timedelta):
         to_encode = data.copy()
         expire = datetime.utcnow() + expires_delta
-        to_encode.update({"exp": expire})
+        to_encode.update({consts.Authentication.JWT_EXPIRY_KEY: expire})
         encoded_jwt = jwt.encode(to_encode, config.authentication.secret_key, algorithm=config.authentication.algorithm)
         return encoded_jwt
 
@@ -47,7 +48,7 @@ class AuthenticationManager:
         credentials_exception = AuthenticationError("Could not validate credentials")
         try:
             payload = jwt.decode(token, config.authentication.secret_key, algorithms=[config.authentication.algorithm])
-            email: str = payload.get("sub")
+            email: str = payload.get(consts.Authentication.JWT_EMAIL_KEY)
             if email is None:
                 raise credentials_exception
             token_data = TokenData(email=email)
@@ -70,9 +71,9 @@ class AuthenticationManager:
             raise AuthenticationError("Incorrect email or password")
         access_token_expires = timedelta(minutes=config.authentication.access_token_expire_minutes)
         access_token = self.create_access_token(
-            data={"sub": user.email}, expires_delta=access_token_expires
+            data={consts.Authentication.JWT_EMAIL_KEY: user.email}, expires_delta=access_token_expires
         )
-        return {"access_token": access_token, "token_type": "bearer"}
+        return access_token
 
     def create_user(self, full_name: str, email: str, password: str):
         user = self._user_provider.get_user(email)
@@ -85,5 +86,6 @@ class AuthenticationManager:
             disabled=True,
         ))
         access_token_expires = timedelta(minutes=config.authentication.access_token_expire_minutes)
-        access_token = self.create_access_token(data={"sub": email}, expires_delta=access_token_expires)
-        return {"access_token": access_token, "token_type": "bearer"}
+        access_token = self.create_access_token(data={consts.Authentication.JWT_EMAIL_KEY: email},
+                                                expires_delta=access_token_expires)
+        return access_token

@@ -1,8 +1,13 @@
+from moonlan import consts
 from moonlan.config import config
 from moonlan.spoofing.arp_spoofing import ARPSpoofing
 from moonlan.spoofing.exceptions import AlreadySpoofingError
 
-DEFAULT_SPOOFED_DEVICE = {'mac': '', 'ip': '', 'forward': False}
+DEFAULT_SPOOFED_DEVICE = {
+    consts.ArpSpoofing.SPOOFED_DEVICE_MAC_KEY: consts.ArpSpoofing.SPOOFED_DEVICE_DEFAULT_MAC,
+    consts.ArpSpoofing.SPOOFED_DEVICE_IP_KEY: consts.ArpSpoofing.SPOOFED_DEVICE_DEFAULT_IP,
+    consts.ArpSpoofing.SPOOFED_DEVICE_FORWARD_KEY: consts.ArpSpoofing.SPOOFED_DEVICE_DEFAULT_FORWARD
+}
 
 
 class SpoofingManager:
@@ -23,7 +28,11 @@ class SpoofingManager:
         if self._is_spoofing:
             raise AlreadySpoofingError()
         self._is_spoofing = True
-        self._spoofed_device = {'mac': mac, 'ip': ip, 'forward': forward}
+        self._spoofed_device = {
+            consts.ArpSpoofing.SPOOFED_DEVICE_MAC_KEY: mac,
+            consts.ArpSpoofing.SPOOFED_DEVICE_IP_KEY: ip,
+            consts.ArpSpoofing.SPOOFED_DEVICE_FORWARD_KEY: forward
+        }
         self._arp_spoofing = ARPSpoofing(
             target_ip=ip,
             target_mac=mac,

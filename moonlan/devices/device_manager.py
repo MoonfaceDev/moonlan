@@ -6,9 +6,8 @@ from typing import Callable
 from watchdog.events import FileModifiedEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
+from moonlan import consts
 from moonlan.devices.devices import DeviceEntry, Devices
-
-DEVICES_CONFIG_PATH = Path('/etc/moonitor/api/devices.json').expanduser()
 
 
 class FileModifiedEventHandler(FileSystemEventHandler):
@@ -45,5 +44,5 @@ class DevicesConfig:
             return Devices([DeviceEntry(**device) for device in data])
 
 
-devices_config = DevicesConfig(DEVICES_CONFIG_PATH)
+devices_config = DevicesConfig(consts.DeviceManager.DEVICES_CONFIG_PATH)
 devices_config.listen_for_updates()

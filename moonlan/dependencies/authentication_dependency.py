@@ -2,12 +2,13 @@ from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from starlette import status
 
+from moonlan import consts
 from moonlan.authentication.authentication_manager import AuthenticationManager
 from moonlan.authentication.database_user_provider import DatabaseUserProvider
 from moonlan.authentication.exceptions import AuthenticationError
 
 authentication_manager = AuthenticationManager(DatabaseUserProvider())
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/api/auth/login')
 
 
 async def current_active_user(token: str = Depends(oauth2_scheme)):
@@ -17,5 +18,5 @@ async def current_active_user(token: str = Depends(oauth2_scheme)):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=e.message,
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={consts.Authentication.AUTHENTICATE_HEADER_NAME: consts.Authentication.AUTHENTICATE_HEADER_VALUE},
         )

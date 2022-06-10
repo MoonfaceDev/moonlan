@@ -2,6 +2,7 @@ from datetime import datetime
 
 from pymongo import MongoClient
 
+from moonlan import consts
 from moonlan.config import config
 from moonlan.dal.documents.device_scan_document import DeviceScanDocument
 from moonlan.dal.documents.history_document import HistoryDocument
@@ -12,7 +13,9 @@ from moonlan.dal.query_builders.scans.device_scans_query_builder import DeviceSc
 from moonlan.dal.query_builders.scans.history_query_builder import HistoryQueryBuilder
 from moonlan.dal.query_builders.scans.last_scan_time_query_builder import LastScanTimeQueryBuilder
 
-collection = MongoClient().get_database(config.database.database_name).get_collection('scans')
+collection = MongoClient().get_database(config.database.database_name).get_collection(
+    consts.Database.SCANS_COLLECTION_NAME
+)
 
 
 @aggregate(collection, HistoryDocument)

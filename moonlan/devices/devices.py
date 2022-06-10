@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from moonlan import consts
+
 
 class DeviceEntry(BaseModel):
     name: str
@@ -8,7 +10,7 @@ class DeviceEntry(BaseModel):
 
 
 def get_default_device(mac: str) -> DeviceEntry:
-    return DeviceEntry(name='UNKNOWN', mac=mac, type='Unknown')
+    return DeviceEntry(name=consts.DeviceManager.DEFAULT_NAME, mac=mac, type=consts.DeviceManager.DEFAULT_TYPE)
 
 
 class Devices(list[DeviceEntry]):

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
+from starlette import status
 
 from moonlan.dependencies.authentication_dependency import current_active_user
 from moonlan.models.responses.spoofed_device_response import SpoofedDeviceResponse
@@ -20,7 +21,7 @@ async def post_start_spoof(ip: str, mac: str, forward: bool):
     try:
         spoofing_manager.start_spoof(ip, mac, forward)
     except AlreadySpoofingError:
-        raise HTTPException(status_code=403, detail='Already spoofing')
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Already spoofing')
 
 
 @router.post('/stop')

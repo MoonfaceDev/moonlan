@@ -3,6 +3,8 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
+from moonlan import consts
+
 
 def _load_config(config_path: Path) -> dict[str, dict[str, str]]:
     with config_path.open('r') as file:
@@ -36,4 +38,4 @@ class Config(BaseModel):
     server: Server
 
 
-config = Config(**_load_config(Path('/etc/moonitor/api/config.json').expanduser()))
+config = Config(**_load_config(consts.Config.CONFIG_PATH))

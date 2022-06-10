@@ -3,7 +3,9 @@ from datetime import datetime, timedelta
 
 import numpy
 from fastapi import APIRouter, Depends, HTTPException
+from starlette import status
 
+from moonlan import consts
 from moonlan.dal import scans_dal, devices_dal
 from moonlan.dal.documents.device_document import DeviceDocument
 from moonlan.dal.documents.device_scan_document import DeviceScanDocument
@@ -11,8 +13,8 @@ from moonlan.dependencies.authentication_dependency import current_active_user
 from moonlan.devices.device_manager import devices_config
 from moonlan.models.responses.device_response import DeviceResponse
 from moonlan.models.responses.devices_response import DevicesResponse
-from moonlan.models.responses.history_response import HistoryResponse
-from moonlan.models.responses.uptime_history_response import UptimeHistoryResponse
+from moonlan.models.responses.history_response import HistoryResponse, HistoryRecord
+from moonlan.models.responses.uptime_history_response import UptimeHistoryResponse, UptimeRecord
 
 router = APIRouter(prefix='/device', tags=['Devices'], dependencies=[Depends(current_active_user)])
 
@@ -20,11 +22,11 @@ router = APIRouter(prefix='/device', tags=['Devices'], dependencies=[Depends(cur
 def _get_ports_with_service_names(ports: list[int]) -> list[dict]:
     def safe_get_service_name(port: int) -> str:
         try:
-            return getservbyport(port, "tcp")
+            return getservbyport(port, consts.DeviceAPI.PORT_SERVICE_PROTOCOL)
         except OSError:
-            return ''
+            return consts.DeviceAPI.PORT_DEFAULT_SERVICE
 
-    return [{'port': port, 'service': safe_get_service_name(port)} for port in ports]
+    return [{consts.DeviceAPI.PORT_KEY: port, consts.DeviceAPI.SERVICE_KEY: safe_get_service_name(port)} for port in ports]
 
 
 def _get_device_response(document: DeviceDocument) -> DeviceResponse:
@@ -43,7 +45,7 @@ def _get_device_response(document: DeviceDocument) -> DeviceResponse:
 async def get_ip(ip: str):
     device = devices_dal.get_device_by_ip(ip)
     if device is None:
-        raise HTTPException(status_code=404, detail='Device not found')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Device not found')
     return _get_device_response(device)
 
 
@@ -51,7 +53,7 @@ async def get_ip(ip: str):
 async def get_mac(mac: str):
     device = devices_dal.get_device_by_mac(mac)
     if device is None:
-        raise HTTPException(status_code=404, detail='Device not found')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Device not found')
     return _get_device_response(device)
 
 
@@ -60,7 +62,7 @@ async def get_name(name: str):
     try:
         device = devices_config.devices[name]
     except KeyError:
-        raise HTTPException(status_code=404, detail='Device not found')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Device not found')
     return get_mac(device.mac)
 
 
@@ -75,7 +77,7 @@ async def get_history(start_timestamp: float, end_timestamp: float, time_interva
     start_datetime = datetime.fromtimestamp(start_timestamp)
     end_datetime = datetime.fromtimestamp(end_timestamp)
     history = scans_dal.get_history(start_datetime, end_datetime, time_interval)
-    return [{'time': entry.id, 'average': entry.avg} for entry in history]
+    return [HistoryRecord(time=entry.id, average=entry.avg) for entry in history]
 
 
 @router.get('/mac/{mac}/uptime', response_model=UptimeHistoryResponse)
@@ -85,7 +87,7 @@ async def get_uptime_history(mac: str, start_timestamp: float, end_timestamp: fl
     scans = list(scans_dal.get_scans_for_device(mac, start_datetime, end_datetime))
     online_times = _get_online_times(scans, start_datetime)
     return [
-        {'time': group_start_time, 'uptime': group_online_time}
+        UptimeRecord(time=group_start_time, uptime=group_online_time)
         for group_start_time, group_online_time
         in _get_uptime_history_groups(start_datetime, end_datetime, time_interval, online_times)
     ]
