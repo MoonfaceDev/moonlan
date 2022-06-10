@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from pymongo import MongoClient
 
@@ -6,106 +6,51 @@ from moonlan.config import config
 from moonlan.dal.documents.device_document import DeviceDocument
 from moonlan.dal.documents.device_scan_document import DeviceScanDocument
 from moonlan.dal.documents.history_document import HistoryDocument
+from moonlan.dal.documents.scan_time_document import ScanTimeDocument
+from moonlan.dal.infrastructure.query_executors.aggregation_query_executor import AggregationQueryExecutor
+from moonlan.dal.infrastructure.query_executors.find_query_executor import FindQueryExecutor
+from moonlan.dal.infrastructure.query_executors.fine_one_query_executor import FindOneQueryExecutor
+from moonlan.dal.query_builders.device_by_ip_query_builder import DeviceByIpQueryBuilder
+from moonlan.dal.query_builders.device_by_mac_query_builder import DeviceByMacQueryBuilder
+from moonlan.dal.query_builders.device_scans_query_builder import DeviceScansQueryBuilder
+from moonlan.dal.query_builders.devices_query_builder import DevicesQueryBuilder
+from moonlan.dal.query_builders.history_query_builder import HistoryQueryBuilder
+from moonlan.dal.query_builders.last_scan_time_query_builder import LastScanTimeQueryBuilder
 
 _database = MongoClient().get_database(config.database.database_name)
 
 
 def get_history(start_datetime: datetime, end_datetime: datetime, time_interval: float) -> list[HistoryDocument]:
-    boundaries = [1000 * boundary for boundary in range(
-        int(start_datetime.replace(tzinfo=timezone.utc).timestamp()),
-        int(end_datetime.replace(tzinfo=timezone.utc).timestamp() + time_interval),
-        int(time_interval))]
-    history = _database.get_collection('scans').aggregate([
-        {'$match': {
-            '$and': [
-                {'scan_time': {'$gt': datetime.fromtimestamp(
-                    start_datetime.timestamp() -
-                    start_datetime.replace(tzinfo=timezone.utc).timestamp() % time_interval
-                )}},
-                {'scan_time': {'$lt': datetime.fromtimestamp(
-                    end_datetime.timestamp() -
-                    end_datetime.replace(tzinfo=timezone.utc).timestamp() % time_interval
-                )}}
-            ]
-        }},
-        {'$facet': {'data': [{'$bucket': {
-            'groupBy': {
-                '$subtract': [
-                    {'$toLong': '$scan_time'},
-                    {'$mod': [{'$toLong': '$scan_time'}, int(time_interval * 1000)]}
-                ]
-            },
-            'boundaries': boundaries,
-            'default': 'Other',
-            'output': {
-                'avg': {'$avg': {'$size': '$entities'}}
-            }
-        }}]}},
-        {"$addFields": {"data": {"$map": {
-            "input": boundaries[:-1],
-            "as": "i",
-            "in": {
-                "_id": "$$i",
-                "avg": {
-                    "$cond": [
-                        {"$eq": [{"$indexOfArray": ["$data._id", "$$i"]}, -1]},
-                        0,
-                        {"$arrayElemAt": ["$data.avg", {"$indexOfArray": ["$data._id", "$$i"]}]}
-                    ]
-                }
-            }
-        }}}},
-        {"$unwind": "$data"},
-        {"$replaceRoot": {"newRoot": "$data"}},
-        {'$project': {
-            '_id': {
-                '$toDate': '$_id'
-            },
-            'avg': 1
-        }},
-        {'$sort': {
-            '_id': 1
-        }}
-    ])
-    return [HistoryDocument(**document) for document in history]
+    query = HistoryQueryBuilder(start_datetime, end_datetime, time_interval).build()
+    documents = AggregationQueryExecutor(_database.get_collection('scans')).execute(query)
+    return [HistoryDocument(**document) for document in documents]
 
 
 def get_scans_for_device(mac: str, start_datetime: datetime, end_datetime: datetime) -> list[DeviceScanDocument]:
-    history = _database.get_collection('scans').aggregate([
-        {'$match': {
-            '$and': [
-                {'scan_time': {'$gte': start_datetime}},
-                {'scan_time': {'$lte': end_datetime}},
-            ]
-        }},
-        {'$set': {'online': {
-            '$gt': [
-                {'$size': {
-                    '$filter': {'input': '$entities', 'as': 'entity', 'cond': {'$eq': ['$$entity.mac', mac]}}
-                }},
-                0
-            ]
-        }}},
-        {'$project': {'_id': 0, 'scan_time': 1, 'online': 1}},
-        {'$sort': {'scan_time': 1}}
-    ])
-    return [DeviceScanDocument(**document) for document in history]
+    query = DeviceScansQueryBuilder(mac, start_datetime, end_datetime).build()
+    documents = AggregationQueryExecutor(_database.get_collection('scans')).execute(query)
+    return [DeviceScanDocument(**document) for document in documents]
 
 
 def get_device_by_ip(ip_address: str) -> DeviceDocument:
-    document = _database.get_collection('devices').find_one({
-        'entity.ip': ip_address
-    })
+    query = DeviceByIpQueryBuilder(ip_address).build()
+    document = FindOneQueryExecutor(_database.get_collection('devices')).execute(query)
     return DeviceDocument(**document)
 
 
 def get_device_by_mac(mac_address: str) -> DeviceDocument:
-    document = _database.get_collection('devices').find_one({
-        'entity.mac': mac_address
-    })
+    query = DeviceByMacQueryBuilder(mac_address).build()
+    document = FindOneQueryExecutor(_database.get_collection('devices')).execute(query)
     return DeviceDocument(**document)
 
 
 def get_devices() -> list[DeviceDocument]:
-    devices = _database.get_collection('devices').find()
-    return [DeviceDocument(**document) for document in devices]
+    query = DevicesQueryBuilder().build()
+    documents = FindQueryExecutor(_database.get_collection('devices')).execute(query)
+    return [DeviceDocument(**document) for document in documents]
+
+
+def get_last_scan_time() -> ScanTimeDocument:
+    query = LastScanTimeQueryBuilder().build()
+    document = FindOneQueryExecutor(_database.get_collection('scans')).execute(query)
+    return ScanTimeDocument(**document)

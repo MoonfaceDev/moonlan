@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Form, HTTPException
 from starlette import status
 
-from moonlan.authentication_api import current_active_user, authentication_manager
+from moonlan.dependencies.authentication_dependency import current_active_user, authentication_manager
 from moonlan.authentication.exceptions import AuthenticationError
 from moonlan.models.responses.token_response import TokenResponse
 from moonlan.models.user import User

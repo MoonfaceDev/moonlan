@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 
-from moonlan.authentication_api import current_active_user
+from moonlan.dependencies.authentication_dependency import current_active_user
 from moonlan.models.responses.spoofed_device_response import SpoofedDeviceResponse
 from moonlan.spoofing.exceptions import AlreadySpoofingError
 from moonlan.spoofing.spoofing_manager import SpoofingManager

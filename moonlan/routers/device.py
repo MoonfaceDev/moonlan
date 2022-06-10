@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import numpy
 from fastapi import APIRouter, Depends, HTTPException
 
-from moonlan.authentication_api import current_active_user
+from moonlan.dependencies.authentication_dependency import current_active_user
 from moonlan.dal import scans_data
 from moonlan.dal.documents.device_document import DeviceDocument
 from moonlan.dal.documents.device_scan_document import DeviceScanDocument
