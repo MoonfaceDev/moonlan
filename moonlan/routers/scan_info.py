@@ -1,7 +1,6 @@
 import json
 
 from fastapi import APIRouter, Depends
-from starlette.responses import Response
 
 from moonlan import consts
 from moonlan.dal import scans_dal
@@ -19,20 +18,8 @@ async def get_last_scan():
 
 @router.get('/interval', response_model=ScanInfoIntervalResponse)
 async def get_interval():
-    with consts.ScanInfo.SCAN_CONFIG_PATH.open('r') as file:
+    with consts.Settings.SCAN_CONFIG_PATH.open('r') as file:
         scan_config = json.load(file)
         return ScanInfoIntervalResponse(
-            interval=scan_config[consts.ScanInfo.NETWORK_SCAN_KEY][consts.ScanInfo.SCAN_INTERVAL_KEY]
+            interval=scan_config['network_scan']['scan_interval']
         )
-
-
-@router.get('/view')
-async def get_file():
-    with consts.ScanInfo.SCAN_CONFIG_PATH.open('r') as file:
-        return Response(file.read(), media_type=consts.ScanInfo.VIEW_FILE_CONTENT_TYPE)
-
-
-@router.post('/update')
-async def update_file(data: str):
-    with consts.ScanInfo.SCAN_CONFIG_PATH.open('w') as file:
-        file.write(data)

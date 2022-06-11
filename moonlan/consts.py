@@ -55,8 +55,9 @@ class Server:
     TEMPLATE_REQUEST_KEY = 'request'
 
 
-class ScanInfo:
+class Settings:
     SCAN_CONFIG_PATH = Path('/etc/moonitor/scan/config.json')
-    VIEW_FILE_CONTENT_TYPE = 'application/json'
-    NETWORK_SCAN_KEY = 'network_scan'
-    SCAN_INTERVAL_KEY = 'scan_interval'
+    SERVER_CONFIG_PATH = Path('/etc/moonitor/api/config.json')
+    SCAN_SERVICE_NAME = 'moonscan'
+    SERVER_SERVICE_NAME = 'moonlan'
+    SUCCESS_RETURN_CODE = 0
