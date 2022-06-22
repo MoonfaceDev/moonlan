@@ -77,7 +77,10 @@ async def get_devices():
 async def get_history(start_timestamp: float, end_timestamp: float, time_interval: float):
     start_datetime = datetime.fromtimestamp(start_timestamp)
     end_datetime = datetime.fromtimestamp(end_timestamp)
-    history = scans_dal.get_history(start_datetime, end_datetime, time_interval)
+    try:
+        history = scans_dal.get_history(start_datetime, end_datetime, time_interval)
+    except QueryBuildingError:
+        return []
     return [HistoryRecord(time=entry.id, average=entry.avg) for entry in history]
 
 

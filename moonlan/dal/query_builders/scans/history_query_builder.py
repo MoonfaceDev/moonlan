@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from moonlan.dal.infrastructure.base_query_builders.aggregation_query_builder import AggregationQueryBuilder
+from moonlan.dal.infrastructure.exceptions import QueryBuildingError
 
 
 class HistoryQueryBuilder(AggregationQueryBuilder):
@@ -86,6 +87,8 @@ class HistoryQueryBuilder(AggregationQueryBuilder):
 
     def _get_pipeline(self) -> list[dict]:
         boundaries = self._get_boundaries()
+        if len(boundaries) < 2:
+            raise QueryBuildingError('No buckets exist between start to end datetime')
         return [
             self._get_datetime_match(),
             self._get_facet(boundaries),
