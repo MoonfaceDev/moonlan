@@ -9,9 +9,10 @@ from moonlan import consts
 from moonlan.dal import scans_dal, devices_dal
 from moonlan.dal.documents.device_document import DeviceDocument
 from moonlan.dal.documents.device_scan_document import DeviceScanDocument
+from moonlan.dal.infrastructure.exceptions import QueryBuildingError
 from moonlan.dependencies.authentication_dependency import current_active_user
 from moonlan.devices.device_manager import devices_config
-from moonlan.models.responses.device_response import DeviceResponse
+from moonlan.models.responses.device_response import DeviceResponse, PortInfo
 from moonlan.models.responses.devices_response import DevicesResponse
 from moonlan.models.responses.history_response import HistoryResponse, HistoryRecord
 from moonlan.models.responses.uptime_history_response import UptimeHistoryResponse, UptimeRecord
@@ -19,14 +20,14 @@ from moonlan.models.responses.uptime_history_response import UptimeHistoryRespon
 router = APIRouter(prefix='/device', tags=['Devices'], dependencies=[Depends(current_active_user)])
 
 
-def _get_ports_with_service_names(ports: list[int]) -> list[dict]:
+def _get_ports_with_service_names(ports: list[int]) -> list[PortInfo]:
     def safe_get_service_name(port: int) -> str:
         try:
             return getservbyport(port, consts.DeviceAPI.PORT_SERVICE_PROTOCOL)
         except OSError:
             return consts.DeviceAPI.PORT_DEFAULT_SERVICE
 
-    return [{consts.DeviceAPI.PORT_KEY: port, consts.DeviceAPI.SERVICE_KEY: safe_get_service_name(port)} for port in ports]
+    return [PortInfo(port=port, service=safe_get_service_name(port)) for port in ports]
 
 
 def _get_device_response(document: DeviceDocument) -> DeviceResponse:

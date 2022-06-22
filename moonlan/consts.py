@@ -37,8 +37,6 @@ class Database:
 class DeviceAPI:
     PORT_SERVICE_PROTOCOL = 'tcp'
     PORT_DEFAULT_SERVICE = ''
-    PORT_KEY = 'port'
-    SERVICE_KEY = 'service'
 
 
 class DeviceManager:
