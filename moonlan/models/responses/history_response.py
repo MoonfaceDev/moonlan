@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 class HistoryRecord(BaseModel):
     time: datetime
-    average: float
+    average: float | None
 
 
 class HistoryResponse(BaseModel):

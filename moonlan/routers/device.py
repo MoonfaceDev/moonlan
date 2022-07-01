@@ -81,7 +81,12 @@ async def get_history(start_timestamp: float, end_timestamp: float, time_interva
         history = scans_dal.get_history(start_datetime, end_datetime, time_interval)
     except QueryBuildingError:
         return []
-    return [HistoryRecord(time=entry.id, average=entry.avg) for entry in history]
+    return [
+        HistoryRecord(time=entry.id, average=entry.avg)
+        if entry.id < datetime.now()
+        else HistoryRecord(time=entry.id, average=None)
+        for entry in history
+    ]
 
 
 @router.get('/mac/{mac}/uptime', response_model=UptimeHistoryResponse)
@@ -102,12 +107,15 @@ def _get_uptime_history_groups(
         end_datetime: datetime,
         time_interval: float,
         online_times: list[tuple[datetime, datetime]]
-) -> list[tuple[datetime, timedelta]]:
+) -> list[tuple[datetime, timedelta | None]]:
     uptime_history = []
     for group_start_timestamp in numpy.arange(start_datetime.timestamp(), end_datetime.timestamp(), time_interval):
         group_start_datetime = datetime.fromtimestamp(group_start_timestamp)
         group_end_datetime = min(group_start_datetime + timedelta(seconds=time_interval), end_datetime)
-        group_uptime = _get_group_uptime(group_start_datetime, group_end_datetime, online_times)
+        if group_start_datetime < datetime.now():
+            group_uptime = _get_group_uptime(group_start_datetime, group_end_datetime, online_times)
+        else:
+            group_uptime = None
         uptime_history.append((group_start_datetime, group_uptime))
 
     return uptime_history
