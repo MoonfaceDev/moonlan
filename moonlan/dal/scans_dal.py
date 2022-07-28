@@ -13,7 +13,7 @@ from moonlan.dal.query_builders.scans.device_scans_query_builder import DeviceSc
 from moonlan.dal.query_builders.scans.history_query_builder import HistoryQueryBuilder
 from moonlan.dal.query_builders.scans.last_scan_time_query_builder import LastScanTimeQueryBuilder
 
-collection = MongoClient().get_database(config.database.database_name).get_collection(
+collection = MongoClient(consts.Database.HOSTNAME).get_database(config.database.database_name).get_collection(
     consts.Database.SCANS_COLLECTION_NAME
 )
 

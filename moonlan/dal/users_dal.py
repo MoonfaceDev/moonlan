@@ -9,7 +9,7 @@ from moonlan.dal.query_builders.users.create_user_query_builder import CreateUse
 from moonlan.dal.query_builders.users.user_by_email_query_builder import UserByEmailQueryBuilder
 from moonlan.models.internal_user import InternalUser
 
-collection = MongoClient().get_database(config.database.database_name).get_collection(
+collection = MongoClient(consts.Database.HOSTNAME).get_database(config.database.database_name).get_collection(
     consts.Database.USERS_COLLECTION_NAME
 )
 

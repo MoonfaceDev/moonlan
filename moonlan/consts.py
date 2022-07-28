@@ -29,6 +29,7 @@ class Config:
 
 
 class Database:
+    HOSTNAME = 'mongo'
     DEVICES_COLLECTION_NAME = 'devices'
     SCANS_COLLECTION_NAME = 'scans'
     USERS_COLLECTION_NAME = 'users'
