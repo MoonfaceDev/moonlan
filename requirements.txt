@@ -8,4 +8,3 @@ passlib~=1.7.4
 watchdog~=2.1.7
 setuptools~=45.2.0
 numpy~=1.22.3
-moonlan~=0.1.0
