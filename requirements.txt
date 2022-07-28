@@ -8,3 +8,6 @@ passlib~=1.7.4
 watchdog~=2.1.7
 setuptools~=45.2.0
 numpy~=1.22.3
+python-jose~=3.3.0
+Jinja2~=3.1.1
+python-multipart~=0.0.5
