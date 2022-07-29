@@ -9,7 +9,7 @@ from moonlan.dal.query_builders.devices.device_by_ip_query_builder import Device
 from moonlan.dal.query_builders.devices.device_by_mac_query_builder import DeviceByMacQueryBuilder
 from moonlan.dal.query_builders.devices.devices_query_builder import DevicesQueryBuilder
 
-collection = MongoClient(consts.Database.HOSTNAME).get_database(config.database.database_name).get_collection(
+collection = MongoClient().get_database(config.database.database_name).get_collection(
     consts.Database.DEVICES_COLLECTION_NAME
 )
 
